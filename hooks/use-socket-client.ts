@@ -2,26 +2,19 @@ import { config } from "@/lib/config";
 import { useEffect, useRef, useState } from "react";
 import { Socket, io } from "socket.io-client";
 
-const PORT = config.socketServerPort;
-
 export const initSocketClient = async () => {
   try {
-    const res = await fetch("/api/socket");
-    if (res.status === 200 || res.status === 201) {
-      const socket = io(`:${PORT}`, { path: "/api/socket" });
+    const socket = io(config.socketServerUrl);
 
-      socket.on("join", (msg) => {
-        console.log(msg);
-      });
+    socket.on("join", (msg) => {
+      console.log(msg);
+    });
 
-      socket.on("leave", (msg) => {
-        console.log(msg);
-      });
+    socket.on("leave", (msg) => {
+      console.log(msg);
+    });
 
-      return socket;
-    }
-
-    return null;
+    return socket;
   } catch {
     return null;
   }
@@ -32,13 +25,21 @@ export const useSocketClient = () => {
   const [socket, setSocket] = useState<Socket>();
 
   useEffect(() => {
+    let socketConnection: Socket;
     if (!hasInitialized.current) {
       initSocketClient().then((socket) => {
-        if (socket) setSocket(socket);
+        if (socket) {
+          setSocket(socket);
+          socketConnection = socket;
+        }
       });
 
       hasInitialized.current = true;
     }
+
+    return () => {
+      if (socketConnection) socketConnection.disconnect();
+    };
   }, []);
 
   return socket;
